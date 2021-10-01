@@ -18,6 +18,12 @@ priv/cores/solr.xml file inside the module: copy the solr.xml.in file
 to solr.xml and add as many cores as you have sites, naming them the
 same way.
 
+- cd priv/cores
+- clone the example dir as _yoursite_ (use your site name)
+- copy `solr.xml.in` to `solr.xml`
+- add _yoursite_ to the `solr.xml` files
+
+
 Regular query syntax
 --------------------
 
