@@ -54,10 +54,10 @@
 -include_lib("xmerl/include/xmerl.hrl").
 
 -record(esolr,
-	{update_url,   
+	{update_url,
 	 search_url,
 	 morelikethis_url, % more-like-this
-	 add_timeout,	
+	 add_timeout,
 	 delete_timeout,
 	 commit_timeout,
 	 search_timeout,
@@ -75,17 +75,17 @@
 start() ->
 	gen_server:start(?MODULE,[],[]).
 
-% @doc same as start_link([]) 
+% @doc same as start_link([])
 start_link() ->
 	gen_server:start_link(?MODULE,[],[]).
-	
-	
+
+
 % @doc start the esolr process
-% 
-%      If not specified, the default url used for search is "http://localhost:8983/solr/select", 
-%      and for updates http://localhost:8983/solr/update 
+%
+%      If not specified, the default url used for search is "http://localhost:8983/solr/select",
+%      and for updates http://localhost:8983/solr/update
 % @spec start(Options::[Option]) -> Result
-%       Option = {select_url,URL}|{update_url,URL}| {add_timeout,integer()} | {search_timeout,integer()} 
+%       Option = {select_url,URL}|{update_url,URL}| {add_timeout,integer()} | {search_timeout,integer()}
 %                |{delete_timeout,integer()} | {commit_timeout,integer()} | {optimize_timeout,integer()}
 %       URL = string()
 start(Options) ->
@@ -94,28 +94,28 @@ start(Options) ->
 % @see start/1
 start_link(Options) ->
 	gen_server:start_link(?MODULE,Options,[]).
-	
-	
+
+
 
 
 % @doc add the given documents to the index
-%	
+%
 % @spec add(Docs::Documents) -> Result
 % Documents = [Doc]
 % Doc = {doc,Fields}
-% Fields = [Field]	
+% Fields = [Field]
 % Field = {Name,Value}
 % Name = atom()
 % Value = IOString
 add(Docs, Pid) ->
 	gen_server:call(Pid,{add,Docs},?ESOLR_MAX_ADD_TIMEOUT).
-	
+
 % @doc search the index
 %
-%      AdditionalInfo contains additional information present in the response 
+%      AdditionalInfo contains additional information present in the response
 %      not directly parsed by esolr, like highlight info
 %
-% @spec search(Query::Query,Options::SearchOptions) -> SearchResult 	
+% @spec search(Query::Query,Options::SearchOptions) -> SearchResult
 % Query = string()
 % SearchOptions = [SearchOption]
 % SearchOption = {fields,SearchFields} | {start,StartRow} | {count,Count} | {sort,[SortSpecification]} | {highlight,HihhligthFields}
@@ -131,21 +131,21 @@ add(Docs, Pid) ->
 % Fields = [{Name,Value}]
 % Name = atom()
 % Value = IOString
-% AdditionalInfo = term()  
+% AdditionalInfo = term()
 search(Query,Options,Pid) ->
 	gen_server:call(Pid,{search,Query,Options},?ESOLR_MAX_SEARCH_TIMEOUT).
 
 morelikethis(Query,Options,Pid) ->
 	gen_server:call(Pid,{morelikethis,Query,Options},?ESOLR_MAX_SEARCH_TIMEOUT).
 
-	
-% @doc  delete one or more documents. 
+
+% @doc  delete one or more documents.
 % @spec delete(Del::Delete) -> Response
 %       Delete = {id,Id} | {q,Query}
 % 		Id = string()
 % 		Query = string()
 %		Response = ok | {error,Reason}
-delete(Del,Pid) ->	
+delete(Del,Pid) ->
 	gen_server:call(Pid,{delete,Del},?ESOLR_MAX_DELETE_TIMEOUT).
 
 
@@ -155,7 +155,7 @@ commit(Pid) ->
 	gen_server:call(Pid,commit,?ESOLR_MAX_COMMIT_TIMEOUT).
 
 % @doc  send a "optimize" command to the server
-%       
+%
 % @see set_auto_optimize/1
 optimize(Pid) ->
 	gen_server:call(Pid,optimize,infinity).
@@ -164,24 +164,24 @@ optimize(Pid) ->
 stop(Pid) ->
 	gen_server:call(Pid,stop,infinity).
 
-% @doc  sets the autocommit behavior of the library. 
+% @doc  sets the autocommit behavior of the library.
 %
 %       {time,N} to do an automatic commit every N miliseconds, if there are uncommited updates <br/>
 % 		always :   esolr will automatically commit after each update.     <br/>
-% 		false :    esolr won't commit automatically. 
+% 		false :    esolr won't commit automatically.
 % @spec set_auto_commit(AutoCommitMode::Mode) ->ok
 %       Mode = false | always | {time,integer()}
 set_auto_commit(AutoCommitMode, Pid)  ->
-	if 
+	if
 		AutoCommitMode == false;
-		AutoCommitMode == always; 
+		AutoCommitMode == always;
 		is_tuple(AutoCommitMode) ->
 			gen_server:call(Pid,{set_auto_commit,AutoCommitMode});
 		true -> throw(bad_option)
 	end.
-	
-	
-	
+
+
+
 % @doc  sets the auto optimize behavior of the library.
 %
 %		Similar to set_auto_commit/1, esolr can periodically send "optimize" commands to the server.
@@ -191,13 +191,13 @@ set_auto_commit(AutoCommitMode, Pid)  ->
 % @spec set_auto_optimize(AutoOptimizeMode::Mode) ->ok
 %       Mode = false | {time,integer()}
 set_auto_optimize(AutoOptimizetMode, Pid)->
-	if 
+	if
 		AutoOptimizetMode == false;
 	    is_tuple(AutoOptimizetMode) ->
 	    	gen_server:call(Pid,{set_auto_optimize,AutoOptimizetMode});
 	    true -> throw(bad_option)
 	end.
-	    	
+
 
 
 
@@ -207,11 +207,11 @@ set_auto_optimize(AutoOptimizetMode, Pid)->
 % @hidden
 timeout_value(Key,Max,Default,Options) ->
 	case lists:keysearch(Key,1,Options) of
-		{value,{Key,N}} when N =< Max -> 
+		{value,{Key,N}} when N =< Max ->
 			N;
-		{value,{Key,N}} when N >  Max -> 
+		{value,{Key,N}} when N >  Max ->
 			throw({invalid_timeout,{Key,too_big,N}});
-		false -> 
+		false ->
 			Default
 	end.
 
@@ -237,8 +237,8 @@ init(Options) ->
 
 	inets:start(),
 	{ok,#esolr{update_url=UpdateUrl,
-               search_url = SelectUrl, 
-               morelikethis_url = MorelikethisUrl, 
+               search_url = SelectUrl,
+               morelikethis_url = MorelikethisUrl,
 		add_timeout=AddTimeout,
 		commit_timeout=CommitTimeout,
 		optimize_timeout=OptimizeTimeout,
@@ -256,10 +256,10 @@ handle_call(R={set_auto_commit,_Mode},From,State=#esolr{auto_commit={time,TRef}}
 handle_call({set_auto_commit,{time,N}},_From,State) ->
 	{ok,TRef} = timer:send_interval(N,auto_commit),
 	{reply,ok,State#esolr{auto_commit={time,TRef}}};
-%%no need to setup timer	
+%%no need to setup timer
 handle_call({set_auto_commit,Mode},_From,State) ->
 	{reply,ok,State#esolr{auto_commit=Mode}};
-	
+
 handle_call(R={set_auto_optimize,_Mode},From,State=#esolr{auto_optimize={time,TRef}}) ->
 	timer:cancel(TRef),
 	handle_call(R,From,State#esolr{auto_optimize=false});
@@ -267,59 +267,59 @@ handle_call(R={set_auto_optimize,_Mode},From,State=#esolr{auto_optimize={time,TR
 handle_call({set_auto_optimize,{time,N}},_From,State) ->
 	{ok,TRef} = timer:send_interval(N,auto_optimize),
 	{reply,ok,State#esolr{auto_optimize={time,TRef}}};
-%%no need to setup timer	
+%%no need to setup timer
 handle_call({set_auto_optimize,Mode},_From,State) ->
 	{reply,ok,State#esolr{auto_optimize=Mode}};
-		
+
 
 
 handle_call({add,Docs},From,State=#esolr{add_timeout=T}) ->
 	Request = encode_add(Docs),
 	make_post_request(Request,{From,add},State#esolr{dirty=true},T);
-	
-handle_call(commit,From,State=#esolr{commit_timeout=T}) ->	
+
+handle_call(commit,From,State=#esolr{commit_timeout=T}) ->
 	Request = encode_commit(),
 	make_post_request(Request,{From,commit},State#esolr{dirty=false},T);
-	
 
-handle_call({delete,Del},From,State=#esolr{delete_timeout=T}) ->	
+
+handle_call({delete,Del},From,State=#esolr{delete_timeout=T}) ->
 	Request = encode_delete(Del),
 	make_post_request(Request,{From,delete},State#esolr{dirty=true},T);
 
-handle_call(optimize,From,State=#esolr{optimize_timeout=T}) ->	
+handle_call(optimize,From,State=#esolr{optimize_timeout=T}) ->
 	Request = encode_optimize(),
 	make_post_request(Request,{From,optimize},State,T);
-	
-handle_call({search,Query,Options},From,State=#esolr{search_url=URL,pending=P,search_timeout=Timeout}) ->	
-	RequestParams = encode_search(Query,Options),
-	SearchURL = lists:flatten([URL,"?wt=json&"|RequestParams]),
-	{ok,RequestId} = httpc:request(get,{SearchURL,[{"connection", "close"}]},[{timeout,Timeout}],[{sync,false}]),
-	Pendings = gb_trees:insert(RequestId,{From,search},P),
-	{noreply,State#esolr{pending=Pendings}};
-	
-handle_call({morelikethis,Query,Options},From,State=#esolr{morelikethis_url=URL,pending=P,search_timeout=Timeout}) ->	
+
+handle_call({search,Query,Options},From,State=#esolr{search_url=URL,pending=P,search_timeout=Timeout}) ->
 	RequestParams = encode_search(Query,Options),
 	SearchURL = lists:flatten([URL,"?wt=json&"|RequestParams]),
 	{ok,RequestId} = httpc:request(get,{SearchURL,[{"connection", "close"}]},[{timeout,Timeout}],[{sync,false}]),
 	Pendings = gb_trees:insert(RequestId,{From,search},P),
 	{noreply,State#esolr{pending=Pendings}};
 
-handle_call(stop,_From,State) ->	
+handle_call({morelikethis,Query,Options},From,State=#esolr{morelikethis_url=URL,pending=P,search_timeout=Timeout}) ->
+	RequestParams = encode_search(Query,Options),
+	SearchURL = lists:flatten([URL,"?wt=json&"|RequestParams]),
+	{ok,RequestId} = httpc:request(get,{SearchURL,[{"connection", "close"}]},[{timeout,Timeout}],[{sync,false}]),
+	Pendings = gb_trees:insert(RequestId,{From,search},P),
+	{noreply,State#esolr{pending=Pendings}};
+
+handle_call(stop,_From,State) ->
 	{stop,normal,ok,State}.
-	
+
 
 make_post_request(Request,PendingInfo,State=#esolr{update_url=URL,pending=P,auto_commit=AC,dirty=Dirty},Timeout) ->
 	{ok,RequestId} = httpc:request(post,{URL,[{"connection", "close"}],"text/xml",Request},[{timeout,Timeout}],[{sync,false}]),
 	Pendings = gb_trees:insert(RequestId,PendingInfo,P),
-	if 
-		(AC == always) and Dirty ->  
+	if
+		(AC == always) and Dirty ->
 				  CommitRequest = encode_commit(),
 				  {ok,C_RequestId} = httpc:request(post,{URL,[{"connection", "close"}],"text/xml",CommitRequest},
 				  					     [{timeout,State#esolr.commit_timeout}],[{sync,false}]),
 				  Pendings2 = gb_trees:insert(C_RequestId,{auto,auto_commit},Pendings),
 				  error_logger:info_report([{auto_commit,send}]),
 			  	  {noreply,State#esolr{pending=Pendings2,dirty=false}};
-		
+
 		true -> {noreply,State#esolr{pending=Pendings}}
 	end.
 
@@ -330,8 +330,8 @@ handle_cast(_Request,State) ->
 	{norepyl,State}.
 
 
- 
- 
+
+
 % @hidden
 handle_info({http,{RequestId,HttpResponse}},State = #esolr{pending=P}) ->
 	case gb_trees:lookup(RequestId,P) of
@@ -346,15 +346,15 @@ handle_info(auto_commit,State = #esolr{dirty=true,commit_timeout=T}) ->
 	Request = encode_commit(),
 	R = make_post_request(Request,{auto,auto_commit},State#esolr{dirty=false},T),
 	error_logger:info_report([{auto_commit,send}]),
-    z_utils:flush_message(auto_commit), 
+    z_utils:flush_message(auto_commit),
 	R;
-	
-	
-	
+
+
+
 handle_info(auto_commit,State = #esolr{dirty=false}) ->
-    z_utils:flush_message(auto_commit),	
+    z_utils:flush_message(auto_commit),
 	{noreply,State};
-	
+
 handle_info(auto_optimize,State) ->
 	Request = encode_optimize(),
 	R = make_post_request(Request,{auto,auto_optimize},State,State#esolr.optimize_timeout),
@@ -362,32 +362,32 @@ handle_info(auto_optimize,State) ->
     z_utils:flush_message(auto_optimize),
 	R.
 
- 
+
 % @hidden
 terminate(_Reason,_State) ->
 	ok.
-% @hidden	
+% @hidden
 code_change(_OldVsn,State,_Extra)	->
 	{ok,State}.
-	
-	
-	
-	
-%%----------------------internal functions ------------------------	
+
+
+
+
+%%----------------------internal functions ------------------------
 
 handle_http_response({error,HttpError},RequestOp,Client) ->
 	response_error(RequestOp,Client,HttpError);
-	
+
 %%search response are in json format
 handle_http_response({{_HttpV,200,_Reason},_Headers,Data},search,Client) ->
 	{ok,{obj,Response},[]} = rfc4627:decode(Data),
 	{value,{"responseHeader",{obj,Headers}},RestResponse} = lists:keytake("responseHeader",1,Response),
 	{value,{"status",Status}} = lists:keysearch("status",1,Headers),
 	case Status of
-		0 -> parse_search_response(RestResponse,Client); 
+		0 -> parse_search_response(RestResponse,Client);
 		N -> response_error(search,Client,N)
 	end;
- 	
+
 handle_http_response({{_HttpV,200,_Reason},_Headers,Data},Op,Client) ->
 	{Response,[]} = xmerl_scan:string(binary_to_list(Data)),
 	[Header] = xmerl_xpath:string("/response/lst[@name='responseHeader']",Response),
@@ -395,74 +395,74 @@ handle_http_response({{_HttpV,200,_Reason},_Headers,Data},Op,Client) ->
 		{ok,QTime} ->  parse_xml_response(Op,Response,QTime,Client);
 		{error,Error} ->  response_error(Op,Client,Error)
 	end;
-	
- 	
-	
-handle_http_response({{_HttpV,StatusCode,Reason},_Headers,_Data},_Op,Client) ->	
+
+
+
+handle_http_response({{_HttpV,StatusCode,Reason},_Headers,_Data},_Op,Client) ->
 	error_logger:error_report({"unrecognized response status",StatusCode,Reason}),
-	gen_server:reply(Client,{error,{status_code,StatusCode,Reason}}).	
-	
-	
+	gen_server:reply(Client,{error,{status_code,StatusCode,Reason}}).
+
+
 response_error(auto_commit,auto,Error) ->
 	error_logger:error_report([{auto_commit_error,Error}]);
-	
- 
+
+
 response_error(auto_optimize,auto,Error) ->
 	error_logger:error_report([{auto_optimize_error,Error}]);
-	
+
 
 response_error(_Op,Client,Error) ->
  	gen_server:reply(Client,{error,Error}).
-	
-	
-	
+
+
+
 parse_search_response(Response,Client) ->
 	{value,{"response",{obj,SearchRespFields}},RestResponse} = lists:keytake("response",1, Response),
 	{value,{"docs",Docs},RespFields} =  lists:keytake("docs",1,SearchRespFields),
 	gen_server:reply(Client,{ok,RespFields,[{doc,DocFields} || {obj,DocFields}<-Docs],RestResponse}).
-	
-	
-	
+
+
+
 parse_xml_response(Op,_Response,_QTime,Client) when Op == add ;
 											   Op == commit;
 											   Op == optimize;
 											   Op == delete	->
 	gen_server:reply(Client,ok);
-	
-	
+
+
 parse_xml_response(auto_commit,_Response,QTime,auto) ->
 	error_logger:info_report([{auto_commit,QTime}]);
-	
+
 parse_xml_response(auto_optimize,_Response,QTime,auto) ->
 	error_logger:info_report([{auto_optimize,QTime}]).
-	
+
 parse_xml_response_header(Header) ->
 	[#xmlText{value=V}] = xmerl_xpath:string("/lst/int[@name='status']/text()",Header),
 	case list_to_integer(V) of
 		?ESOLR_STATUS_OK ->  [#xmlText{value=V1}] = xmerl_xpath:string("/lst/int[@name='QTime']/text()",Header),
 					         {ok,list_to_integer(V1)};
 		Other -> {error,Other}
-		
+
 	end.
-		
-		
-	
-	
+
+
+
+
 encode_search(Query,Options) ->
 	S = [["q=",url_encode(Query)] | lists:map(fun encode_search_option/1,Options)],
 	string:join(S,"&").
-	
-	
+
+
 encode_search_option({fields,Fields}) ->
 	["fl=",url_encode(Fields)];
-	
+
 encode_search_option({start,Start}) ->
 	["start=",integer_to_list(Start)];
 
-encode_search_option({rows,Count}) ->	
+encode_search_option({rows,Count}) ->
 	["rows=",integer_to_list(Count)];
-	
-encode_search_option({sort,SortFields}) ->		
+
+encode_search_option({sort,SortFields}) ->
 	S = [ [Name, "+", atom_to_list(Order)] || {Name,Order} <- SortFields],
 	["sort=",string:join(S,",")];
 
@@ -481,31 +481,31 @@ encode_delete({id,Id})->
 
 encode_delete({q,Query})->
 	iolist_to_binary(xmerl:export_simple([{delete,[],[{'query',[],[Query]}]}],xmerl_xml)).
-	
+
 encode_commit() ->
 	iolist_to_binary(xmerl:export_simple([{commit,[]}],xmerl_xml)).
-	
+
 encode_optimize() ->
 	iolist_to_binary(xmerl:export_simple([{optimize,[]}],xmerl_xml)).
-	
-	
+
+
 encode_add(Docs) ->
 	Doc = {add,[],lists:map(fun encode_doc/1,Docs)},
 	iolist_to_binary(xmerl:export_simple([Doc],xmerl_xml)).
-	
+
 encode_doc({doc,Fields}) ->
 	{doc,[],lists:map(fun encode_field/1,Fields)};
 
 encode_doc({doc,Boost,Fields}) ->
 	{doc,[{boost,Boost}],lists:map(fun encode_field/1,Fields)}.
-	
-	
+
+
 encode_field({Name,Value}) when is_binary(Value)->
 	{field,[{name,Name}],[[Value]]};
 
 encode_field({Name,Value}) ->
 	{field,[{name,Name}],[Value]};
-	
+
 encode_field({Name,Value,Boost}) when is_binary(Value)->
 	{field,[{name,Name},{boost,Boost}],[[Value]]};
 
@@ -514,7 +514,7 @@ encode_field({Name,Value,Boost}) ->
 
 
 
-  	
+
 %%%
 % URL encode - borrowed from CouchDB
 % borrowed again from http://weblog.plexobject.com/?p=1594
@@ -527,7 +527,7 @@ url_encode([H|T]) ->
              [H|url_encode(T)];
          H >= $0, $9 >= H ->
              [H|url_encode(T)];
-         H == $_; H == $.; H == $-; H == $: ->
+         H == $_; H == $.; H == $- ->
              [H|url_encode(T)];
          true ->
              case lists:flatten(io_lib:format("~.16.0B", [H])) of
@@ -539,4 +539,4 @@ url_encode([H|T]) ->
      end;
 url_encode([]) ->
      [].
- 
+

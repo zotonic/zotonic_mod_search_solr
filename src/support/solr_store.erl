@@ -26,16 +26,17 @@ delete(Id, _Context, Solr) ->
 
 %% See schema.xml to see which fields need to be put into Solr.
 convert(Id, Context) ->
-    All = m_rsc:get(Id, Context),
+    convert_1(Id, m_rsc:get(Id, Context), Context).
 
+convert_1(Id, #{} = All, Context) ->
     StrVal = fun(Name) -> z_convert:to_list(first_trans(maps:get(Name, All, <<>>))) end,
-    Bool = fun(Name) -> case z_convert:to_binary(maps:get(Name, All, false)) of
+    Bool = fun(Name) -> case z_convert:to_bool(maps:get(Name, All, false)) of
                             true -> "1";
                             false -> "0"
                         end
            end,
 
-    Date = fun(Name) -> case maps:get(Name, All) of
+    Date = fun(Name) -> case maps:get(Name, All, undefined) of
                             undefined -> "9999-08-17T12:00:00Z";
                             ?ST_JUTTEMIS -> "9999-08-17T12:00:00Z";
                             {{9999,_,_},{_,_,_}} -> "9999-08-17T12:00:00Z";
@@ -68,7 +69,7 @@ convert(Id, Context) ->
                 [{category, z_convert:to_list(C)} || C <- IsA]
                 ++
                 %% rsc category id
-                [{category, z_convert:to_list(m_rsc:name_to_id_check(C, Context))} || C <- IsA]
+                [{category, z_convert:to_list(m_rsc:rid(C, Context))} || C <- IsA]
                 ++
 
                 %% Text fields
@@ -106,7 +107,9 @@ convert(Id, Context) ->
                 ModuleProps;
         {error, _} ->
             []
-    end.
+    end;
+convert_1(_Id, undefined, _Context) ->
+    [].
 
 
 pivot_text(Id, Context0) ->
