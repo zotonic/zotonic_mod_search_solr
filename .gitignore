@@ -1,0 +1,4 @@
+priv/logs
+priv/cores/solr.xml
+priv/cores/*/data
+priv/cores/*/conf

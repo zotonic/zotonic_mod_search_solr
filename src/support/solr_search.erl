@@ -37,7 +37,7 @@ search(Query, {Offset, PageLen}, Solr, Context) ->
 do_search(SolrFunction, Query, {Offset, PageLen}, Solr, Context) ->
     Search = case z_notifier:first({solr_search, Query}, Context) of
                  undefined -> map_search(Query, Context);
-                 {_, _}=S -> S
+                 {_, _} = S -> S
              end,
     case Search of
         {[], _SearchOptions} ->
