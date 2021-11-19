@@ -37,7 +37,9 @@ start_link(Args) when is_list(Args) ->
     gen_server:start_link(?MODULE, Args, []).
 
 
-pid_observe_search_query(Pid, {search_query, _Query, _Limit} = Search, Context) ->
+pid_observe_search_query(_Pid, #search_query{ search = undefined }, _Context) ->
+    undefined;
+pid_observe_search_query(Pid, #search_query{} = Search, Context) ->
     gen_server:call(Pid, {Search, Context}, infinity).
 
 pid_observe_rsc_pivot_done(Pid, Msg, _Context) ->
@@ -75,7 +77,7 @@ init(Args) ->
 
 
 %% @doc A generic Solr query
-handle_call({{search_query, Query, Limit}, Context}, _From, State) ->
+handle_call({#search_query{ search = Query, offsetlimit = Limit }, Context}, _From, State) ->
     {reply, search(Query, Limit, Context, State), State};
 
 %% @doc Trap unknown calls
