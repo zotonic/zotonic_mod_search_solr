@@ -23,6 +23,7 @@
 ]).
 
 -include_lib("zotonic_core/include/zotonic.hrl").
+-include_lib("kernel/include/logger.hrl").
 
 -record(state, {context, solr, default_search, java_pid}).
 
@@ -175,9 +176,12 @@ do_startup(State) ->
     Context=State#state.context,
     %% Start java
     case whereis(solr_java) =:= undefined andalso
-        z_convert:to_bool(m_config:get_value(?MODULE, embedded, true, Context)) of
+        m_config:get_boolean(?MODULE, embedded, true, Context)
+    of
         true ->
-            lager:warning("Starting embedded Solr instance."),
+            ?LOG_NOTICE(#{
+                text => <<"Starting embedded Solr instance.">>
+            }),
             solr_java:start_link(),
             %% Give some time to start up, churn churn
             timer:sleep(10000);

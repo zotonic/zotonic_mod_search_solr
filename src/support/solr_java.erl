@@ -6,7 +6,8 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([start_link/0]).
 
--include_lib("zotonic_core/include/zotonic.hrl").
+-include_lib("kernel/include/logger.hrl").
+
 -define(DEFAULT_RESTART_TIMEOUT, 3000).
 
 -record(state, {script, port=undefined, timeout=?DEFAULT_RESTART_TIMEOUT}).
@@ -39,7 +40,10 @@ handle_info({Port, {exit_status, _N}}, State=#state{port=Port, timeout=T}) ->
     {noreply, State, T};
 
 handle_info({Port, {data, {eol, Line}}}, State=#state{port=Port}) ->
-    lager:info("~s", [Line]), 
+    ?LOG_INFO(#{
+        text => <<"Solr Java eol data">>,
+        line => Line
+    }),
     {noreply, State};
 
 handle_info({'EXIT', Port, normal}, State=#state{port=Port, timeout=T}) ->

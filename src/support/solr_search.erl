@@ -5,6 +5,7 @@
 -module(solr_search).
 
 -include_lib("zotonic_core/include/zotonic.hrl").
+-include_lib("kernel/include/logger.hrl").
 
 -export([
          search/4,
@@ -88,7 +89,10 @@ do_search(SolrFunction, Query, {Offset, PageLen}, Solr, Context) ->
                                    prev=Prev
                                   };
                 {error, Reason} ->
-                    lager:error("Solr search error, reason: ~p", [Reason]),
+                    ?LOG_ERROR(#{
+                        text => <<"Solr search error">>,
+                        reason => Reason
+                    }),
                     #search_result{result=[], total=0}
             end
     end.
