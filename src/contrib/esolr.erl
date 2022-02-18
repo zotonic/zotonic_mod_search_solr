@@ -52,6 +52,7 @@
 -define(ESOLR_MAX_OPTIMIZE_TIMEOUT,120*1000).
 
 -include_lib("xmerl/include/xmerl.hrl").
+-include_lib("kernel/include/logger.hrl").
 
 -record(esolr,
 	{update_url,
@@ -317,7 +318,10 @@ make_post_request(Request,PendingInfo,State=#esolr{update_url=URL,pending=P,auto
 				  {ok,C_RequestId} = httpc:request(post,{URL,[{"connection", "close"}],"text/xml",CommitRequest},
 				  					     [{timeout,State#esolr.commit_timeout}],[{sync,false}]),
 				  Pendings2 = gb_trees:insert(C_RequestId,{auto,auto_commit},Pendings),
-				  error_logger:info_report([{auto_commit,send}]),
+				  ?LOG_INFO(#{
+				  	  what => auto_commit,
+				  	  action => send
+				  }),
 			  	  {noreply,State#esolr{pending=Pendings2,dirty=false}};
 
 		true -> {noreply,State#esolr{pending=Pendings}}
@@ -345,7 +349,10 @@ handle_info({http,{RequestId,HttpResponse}},State = #esolr{pending=P}) ->
 handle_info(auto_commit,State = #esolr{dirty=true,commit_timeout=T}) ->
 	Request = encode_commit(),
 	R = make_post_request(Request,{auto,auto_commit},State#esolr{dirty=false},T),
-	error_logger:info_report([{auto_commit,send}]),
+	?LOG_INFO(#{
+		what => auto_commit,
+		action => send
+	}),
     z_utils:flush_message(auto_commit),
 	R;
 
@@ -358,7 +365,10 @@ handle_info(auto_commit,State = #esolr{dirty=false}) ->
 handle_info(auto_optimize,State) ->
 	Request = encode_optimize(),
 	R = make_post_request(Request,{auto,auto_optimize},State,State#esolr.optimize_timeout),
-	error_logger:info_report([{auto_optimize,send}]),
+	?LOG_INFO(#{
+		what => auto_optimize,
+		action => send
+	}),
     z_utils:flush_message(auto_optimize),
 	R.
 
@@ -399,18 +409,24 @@ handle_http_response({{_HttpV,200,_Reason},_Headers,Data},Op,Client) ->
 
 
 handle_http_response({{_HttpV,StatusCode,Reason},_Headers,_Data},_Op,Client) ->
-	error_logger:error_report({"unrecognized response status",StatusCode,Reason}),
+	?LOG_ERROR(#{
+		text => <<"unrecognized response status">>,
+		status_code => StatusCode,
+		reason => Reason
+	}),
 	gen_server:reply(Client,{error,{status_code,StatusCode,Reason}}).
 
 
 response_error(auto_commit,auto,Error) ->
-	error_logger:error_report([{auto_commit_error,Error}]);
-
-
+	?LOG_ERROR(#{
+		what => auto_commit_error,
+		error => Error
+	});
 response_error(auto_optimize,auto,Error) ->
-	error_logger:error_report([{auto_optimize_error,Error}]);
-
-
+	?LOG_ERROR(#{
+		what => auto_optimize_error,
+		error => Error
+	});
 response_error(_Op,Client,Error) ->
  	gen_server:reply(Client,{error,Error}).
 
@@ -422,19 +438,26 @@ parse_search_response(Response,Client) ->
 	gen_server:reply(Client,{ok,RespFields,[{doc,DocFields} || {obj,DocFields}<-Docs],RestResponse}).
 
 
-
-parse_xml_response(Op,_Response,_QTime,Client) when Op == add ;
-											   Op == commit;
-											   Op == optimize;
-											   Op == delete	->
+parse_xml_response(Op,_Response,QTime,Client)
+	when Op =:= add ;
+	   	 Op =:= commit;
+	   	 Op =:= optimize;
+	   	 Op =:= delete	->
+	?LOG_DEBUG(#{
+		what => Op,
+		query_time => QTime
+	}),
 	gen_server:reply(Client,ok);
-
-
 parse_xml_response(auto_commit,_Response,QTime,auto) ->
-	error_logger:info_report([{auto_commit,QTime}]);
-
+	?LOG_INFO(#{
+		what => auto_commit,
+		query_time => QTime
+	});
 parse_xml_response(auto_optimize,_Response,QTime,auto) ->
-	error_logger:info_report([{auto_optimize,QTime}]).
+	?LOG_INFO(#{
+		what => auto_optimize,
+		query_time => QTime
+	}).
 
 parse_xml_response_header(Header) ->
 	[#xmlText{value=V}] = xmerl_xpath:string("/lst/int[@name='status']/text()",Header),
